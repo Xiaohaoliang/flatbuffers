@@ -93,6 +93,7 @@ std::string FlatCompiler::GetUsageString(const char* program_name) const {
       "  --no-js-exports    Removes Node.js style export lines in JS.\n"
       "  --goog-js-export   Uses goog.exports* for closure compiler exporting in JS.\n"
       "  --go-namespace     Generate the overrided namespace in Golang.\n"
+      "  --general-namespace Generate the overrided namespace in Java and CSharp.\n"
       "  --raw-binary       Allow binaries without file_indentifier to be read.\n"
       "                     This may crash flatc given a mismatched schema.\n"
       "  --proto            Input is a .proto, translate to .fbs.\n"
@@ -178,6 +179,9 @@ int FlatCompiler::Compile(int argc, const char** argv) {
       } else if(arg == "--go-namespace") {
         if (++argi >= argc) Error("missing golang namespace" + arg, true);
         opts.go_namespace = argv[argi];
+      } else if(arg == "--general-namespace") {
+        if (++argi >= argc) Error("missing java/c# namespace" + arg, true);
+        opts.general_namespace = argv[argi];
       } else if(arg == "--defaults-json") {
         opts.output_default_scalars_in_json = true;
       } else if (arg == "--unknown-json") {

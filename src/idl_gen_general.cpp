@@ -152,24 +152,35 @@ class GeneralGenerator : public BaseGenerator {
       : BaseGenerator(parser, path, file_name, "", "."),
         lang_(GetLangParams(parser_.opts.lang)),
         cur_name_space_( nullptr ) {
+    std::istringstream iss(parser.opts.general_namespace);
+    std::string component;
+    while (std::getline(iss, component, '.')) {
+      general_namespace_.components.push_back(component);
+    }
   }
 
   GeneralGenerator &operator=(const GeneralGenerator &);
   bool generate() {
     std::string one_file_code;
-    cur_name_space_ = parser_.namespaces_.back();
+    cur_name_space_ = general_namespace_.components.empty()
+      ? parser_.namespaces_.back()
+      : &general_namespace_;
 
     for (auto it = parser_.enums_.vec.begin(); it != parser_.enums_.vec.end();
          ++it) {
       std::string enumcode;
       auto &enum_def = **it;
       if (!parser_.opts.one_file)
-        cur_name_space_ = enum_def.defined_namespace;
+        cur_name_space_ = general_namespace_.components.empty()
+          ? enum_def.defined_namespace
+          : &general_namespace_;
       GenEnum(enum_def, &enumcode);
       if (parser_.opts.one_file) {
         one_file_code += enumcode;
       } else {
-        if (!SaveType(enum_def.name, *enum_def.defined_namespace,
+        if (!SaveType(enum_def.name, general_namespace_.components.empty()
+                        ? *enum_def.defined_namespace
+                        : general_namespace_,
                       enumcode, false)) return false;
       }
     }
@@ -179,18 +190,24 @@ class GeneralGenerator : public BaseGenerator {
       std::string declcode;
       auto &struct_def = **it;
       if (!parser_.opts.one_file)
-        cur_name_space_ = struct_def.defined_namespace;
+        cur_name_space_ = general_namespace_.components.empty()
+          ? struct_def.defined_namespace
+          : &general_namespace_;
       GenStruct(struct_def, &declcode);
       if (parser_.opts.one_file) {
         one_file_code += declcode;
       } else {
-        if (!SaveType(struct_def.name, *struct_def.defined_namespace,
+        if (!SaveType(struct_def.name, general_namespace_.components.empty()
+                        ? *struct_def.defined_namespace
+                        : general_namespace_,
                       declcode, true)) return false;
       }
     }
 
     if (parser_.opts.one_file) {
-      return SaveType(file_name_, *parser_.namespaces_.back(),
+      return SaveType(file_name_, general_namespace_.components.empty()
+                        ? *parser_.namespaces_.back()
+                        : general_namespace_,
                       one_file_code, true);
     }
     return true;
@@ -1376,6 +1393,8 @@ void GenStruct(StructDef &struct_def, std::string *code_ptr) {
     const LanguageParameters& lang_;
     // This tracks the current namespace used to determine if a type need to be prefixed by its namespace
     const Namespace *cur_name_space_;
+    //command-line arguments to override namespace of schema
+    Namespace general_namespace_;
 };
 }  // namespace general
 
